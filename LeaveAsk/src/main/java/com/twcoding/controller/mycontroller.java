@@ -4,6 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.sql.Time;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -14,25 +15,33 @@ import javax.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.google.gson.Gson;
 import com.twcoding.model.Employee;
+import com.twcoding.model.leaveform;
 import com.twcoding.model.workinghour;
 import com.twcoding.service.EmployeeService;
+import com.twcoding.service.LeaveformService;
 import com.twcoding.service.WorkinghourService;
 
-@Controller
+
+@RestController
+@CrossOrigin(value = "http://localhost:4200")
 public class mycontroller {
 
 	@Autowired
 	private EmployeeService employeeService;
 	@Autowired
 	private WorkinghourService workinghourService;
-	
+	@Autowired
+	private LeaveformService leaveformService;
 	@RequestMapping("")
 	public String index(HttpServletRequest httpServletRequest) {
 		if(httpServletRequest.getSession().getAttribute("emp")!=null) {
@@ -49,7 +58,8 @@ public class mycontroller {
 		return "homepage";
 	}
 	@RequestMapping("/login")
-	public String login(@RequestParam String username, @RequestParam String password,
+	public String login(@RequestParam("username") String username, 
+			@RequestParam("password") String password,
 			HttpServletRequest httpServletRequest) {
 		
 		
@@ -73,20 +83,20 @@ public class mycontroller {
 
 	@RequestMapping("/detail")
 	public String detail(HttpServletRequest httpServletRequest) {		
-
+		System.out.println(httpServletRequest.getSession().getAttribute("emp"));
 		String username=((Employee)httpServletRequest.getSession().getAttribute("emp")).getUsername();
 		Employee emp=employeeService.findEmpByusername(username);
 		workinghour w=workinghourService.findworkhourByUsername(username);
 		httpServletRequest.setAttribute("MODEL", "detail");
-		httpServletRequest.setAttribute("emp", emp);
-		httpServletRequest.setAttribute("workinghour", w);
+		//httpServletRequest.setAttribute("emp", emp);
+		//httpServletRequest.setAttribute("workinghour", w);
 		return "homepage";
 	}
 
 	@RequestMapping("/leave")
 	public String leave(HttpServletRequest httpServletRequest) {
 		httpServletRequest.setAttribute("MODEL", "leave");
-		httpServletRequest.getSession().removeAttribute("emp");
+		
 		return "homepage";
 	}
 	@RequestMapping("/leaveAsk")
@@ -146,5 +156,29 @@ public class mycontroller {
 		
 		httpServletRequest.setAttribute("MODEL", "detail");
 		return "redirect:/detail";
+	}
+	
+	@RequestMapping("/leaveformlist")
+	public String leaveformlist(HttpServletRequest httpServletRequest){
+		List<leaveform> li=leaveformService.findAllLeaveform();
+		System.out.println(li);
+		httpServletRequest.setAttribute("MODEL", "leaveformlist");
+		httpServletRequest.setAttribute("leaveforms", li);
+		return "homepage";
+	}
+	@RequestMapping("/delete-leaveform")
+	public String delete_leaveform(@RequestParam Integer id){
+		System.out.println(id);
+		return "redirect:/leaveformlist";
+	}
+	@RequestMapping("/alter-leaveform")
+	public String alter_leaveform(@RequestParam Integer id,HttpServletRequest httpServletRequest) {
+		leaveform lf=leaveformService.findLeaveformById(id);
+
+		
+		httpServletRequest.setAttribute("MODEL","alter-leaveform");
+		httpServletRequest.getSession().setAttribute("leaveform",lf);
+		httpServletRequest.getSession().setAttribute("leaveformTYPE",Arrays.asList(leaveform.TYPE.values()));
+		return "redirect:/leave";
 	}
 }
